@@ -67,8 +67,9 @@ run_cmd = {
     "encoder_label": ["SKU_NUMBER", "MPOG_ID", "PART_TYPE"],
     "if_overwrite": False,
     "pca": 40,
-    "split": 0.2,
-    "train_dataset_name": "data_split_2y_sel1",
+    "split": 0.1,
+    "percent":0.01,
+    "train_dataset_name": "data_split_2y_sel1_pca",
     "y": ["qty_sold_cy_difm", "qty_sold_cy_diy",
           "qty_sold_py_diy", "qty_sold_py_difm",
           "qty_sold_ppy_diy", "qty_sold_ppy_difm"],
@@ -98,13 +99,16 @@ run_cmd_main = {
 # tst_default = DatasetPool(PARAM_DEFAULT)
 # tst_default.data_forward(**run_cmd)
 
-tst_be = DatasetPool(PARAM_MAIN)
-tst_be.run(**run_cmd_main)
+# tst_be = DatasetPool(PARAM_MAIN)
+# tst_be.run(**run_cmd_main)
+
+tst_be = DatasetPool(PARAM_TEST)
+tst_be.run(**run_cmd)
 
 for yi in tst_be.training_dataset.keys():
-    x_train = tst_be.training_dataset[yi][0]
-    y_train = tst_be.training_dataset[yi][1]
-    print(x_train,y_train)
+    x_train = tst_be.training_dataset[yi][0].to_numpy()
+    y_train = tst_be.training_dataset[yi][1].to_numpy()
+    print(x_train.shape,y_train.shape)
 
     pipeline = Pipeline([
         # feature selection

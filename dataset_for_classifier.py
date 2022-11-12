@@ -121,7 +121,7 @@ class DatasetPool():
                 for csv_x,csv_Y in [["X_train.csv","y_train.csv"]]:
                     p1 = os.path.join(self.save_dir, name, yi, csv_x)
                     p2 = os.path.join(self.save_dir, name, yi, csv_Y)
-                    self.training_dataset[yi] = [self.load_from_csv(p1),self.load_from_csv(p2)]
+                    self.training_dataset[yi] = [pd.read_csv(p1),pd.read_csv(p2,header = None)]
         else:
             self.preload_data(**kwargs)
         # print(self.training_dataset)
@@ -133,11 +133,7 @@ class DatasetPool():
             operator_dataset = self.dataset_input[ni]
             begin_time = time()
             if "percent" in kwargs.keys():
-                X_train, X_test, y_train, y_test = \
-                    sklearn.model_selection.train_test_split(self.dataset_input[name], train_target,
-                                                                test_size=0.1,
-                                                                stratify=y_train)
-                operator_dataset = operator_dataset.sample(frac=kwargs[percent])
+                operator_dataset = operator_dataset.sample(frac=kwargs["percent"])
 
             if "split" in kwargs.keys():
                 for x_1,x_2,y_ in kwargs["training_pairs"]:
