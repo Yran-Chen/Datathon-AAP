@@ -106,8 +106,8 @@ tst_be = DatasetPool(PARAM_TEST)
 tst_be.run(**run_cmd)
 
 for yi in tst_be.training_dataset.keys():
-    x_train = tst_be.training_dataset[yi][0].to_numpy()
-    y_train = tst_be.training_dataset[yi][1].to_numpy()
+    x_train = tst_be.training_dataset[yi][0]
+    y_train = tst_be.training_dataset[yi][1]
     print(x_train.shape,y_train.shape)
 
     pipeline = Pipeline([
