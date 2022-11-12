@@ -102,21 +102,28 @@ class DatasetPool():
     @log(_log = logHandler)
     def run(self,*args,**kwargs):
         print("starting...")
-        self.dataset_preprocessing(**kwargs)
-        self.clean_data(**kwargs)
-        self.split_data_r(**kwargs)
+        self.loading_training_(**kwargs)
         # self.run_LFE_learner(**kwargs)
         return
 
+    def preload_data(self,**kwargs):
+        self.dataset_preprocessing(**kwargs)
+        self.clean_data(**kwargs)
+        self.split_data_r(**kwargs)
+
+    @log(_log = logHandler)
     def loading_training_(self,**kwargs):
         name = kwargs["train_dataset_name"] if "train_dataset_name" in kwargs.keys() else None
         y_ = ["qty_sold_cy_difm","qty_sold_cy_diy"]
         path_list = []
-        for yi in y_:
-            for csv_x,csv_Y in [["X_train.csv","y_train.csv"]]:
-                p1 = os.path.join(self.save_dir, name, yi, csv_x)
-                p2 = os.path.join(self.save_dir, name, yi, csv_Y)
-                self.training_dataset[yi] = [self.load_from_csv(p1),self.load_from_csv(p2)]
+        if os.path.exists(os.path.join(self.save_dir, name)):
+            for yi in y_:
+                for csv_x,csv_Y in [["X_train.csv","y_train.csv"]]:
+                    p1 = os.path.join(self.save_dir, name, yi, csv_x)
+                    p2 = os.path.join(self.save_dir, name, yi, csv_Y)
+                    self.training_dataset[yi] = [self.load_from_csv(p1),self.load_from_csv(p2)]
+        else:
+            self.preload_data(**kwargs)
         # print(self.training_dataset)
 
 
@@ -138,7 +145,7 @@ class DatasetPool():
                     xidx.append(x_1)
                     xidx.append(x_2)
                     yidx = y_
-                    print(xidx,yidx)
+
                     xdf = operator_dataset[xidx]
                     ydf = operator_dataset[yidx]
                 # print(x,y)
@@ -192,7 +199,7 @@ class DatasetPool():
             c1 = set(df_lfe_table.columns)
             df_lfe_table=df_lfe_table.dropna(axis=1,how='all')
             c2 = set(df_lfe_table.columns)
-            print(c1-c2)
+            # print(c1-c2)
             self.dataset_input[name] = df_lfe_table
             if "if_overwrite" in kwargs.keys() and kwargs["if_overwrite"]:
                 self.save_csv_from_df(self.dataset_dir[name],df_lfe_table)
@@ -215,7 +222,7 @@ class DatasetPool():
     def feature_pool_create(self,**kwargs):
         self.feature_pool["y"] = kwargs["y"]
         self.feature_pool["x"] = kwargs["x"]
-        print (self.feature_pool)
+        # print (self.feature_pool)
 
     def load_dataset_forward(self):
         for name in self.dataset:

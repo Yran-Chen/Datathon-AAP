@@ -83,8 +83,8 @@ run_cmd_main = {
     "encoder_label": ["SKU_NUMBER", "MPOG_ID", "PART_TYPE"],
     "if_overwrite": False,
     "pca": 40,
-    "split": 0.3,
-    "train_dataset_name": "data_split_2y_sel1_whole",
+    "split": 0.01,
+    "train_dataset_name": "data_main_new",
     "y": ["qty_sold_cy_difm", "qty_sold_cy_diy",
           "qty_sold_py_diy", "qty_sold_py_difm",
           "qty_sold_ppy_diy", "qty_sold_ppy_difm"],
@@ -95,52 +95,45 @@ run_cmd_main = {
     ]
 }
 
-if args.percent is not None:
-    PARAM_TEST['percent'] = args.percent
-if args.name is not None:
-    PARAM_TEST['name'] = args.name
-if args.rm_cache is not None:
-    PARAM_TEST['rm_cache'] = args.rm_cache
-
 # tst_default = DatasetPool(PARAM_DEFAULT)
 # tst_default.data_forward(**run_cmd)
 
-tst_be = DatasetPool(PARAM_TEST)
-tst_be.loading_training_(**run_cmd)
+tst_be = DatasetPool(PARAM_MAIN)
+tst_be.run(**run_cmd_main)
 
 for yi in tst_be.training_dataset.keys():
     x_train = tst_be.training_dataset[yi][0]
     y_train = tst_be.training_dataset[yi][1]
     print(x_train,y_train)
 
-pipeline = Pipeline([
-    # feature selection
-    ('dlf', XGBRegressor())
-])
+    pipeline = Pipeline([
+        # feature selection
+        ('dlf', XGBRegressor())
+    ])
 
-param_grid = [
-    {
-        'dlf': [XGBRegressor()],
-        'dlf__learning_rate': [0.2, 0.3, 0.4],
-        'dlf__max_depth': [10, 20, 30],
-        'dlf__min_child_weight': [1, 3],
-        # 'dlf__gamma': [0.5, 1, 2],
-        'dlf__colsample_bytree': [0.5, 0.6],
-        'dlf__reg_alpha': [10, 50, 100],
-        'dlf__reg_lambda': [0, 1]
-    }
-# ,
-# {
-# 'dlf':[LinearRegression()],
-# 'dlf__fit_intercept': [True, False],
-# 'dlf__normalize': [True, False]
-# }
-]
-fit_dict = dict()
-for params in param_grid:
-    estimator = str(params["dlf"][0]).replace("()", "")
-    fit_dict[estimator] = GridSearchCV(pipeline, param_grid=params, n_jobs=-1, cv=5, scoring='neg_mean_squared_error',
-                                       verbose=1)
-    _ = fit_dict[estimator].fit(x_train, y_train)
-    print(estimator + " COMPLETE ########################")
-    print("Best Score: " + str(round(fit_dict[estimator].best_score_, 4)))
+    param_grid = [
+        {
+            'dlf': [XGBRegressor()],
+            'dlf__learning_rate': [0.2, 0.3, 0.4],
+            'dlf__max_depth': [10, 20, 30],
+            'dlf__min_child_weight': [1, 3],
+            # 'dlf__gamma': [0.5, 1, 2],
+            'dlf__colsample_bytree': [0.5, 0.6],
+            'dlf__reg_alpha': [10, 50, 100],
+            'dlf__reg_lambda': [0, 1]
+        }
+    # ,
+    # {
+    # 'dlf':[LinearRegression()],
+    # 'dlf__fit_intercept': [True, False],
+    # 'dlf__normalize': [True, False]
+    # }
+    ]
+    fit_dict = dict()
+    for params in param_grid:
+        estimator = str(params["dlf"][0]).replace("()", "")
+        fit_dict[estimator] = GridSearchCV(pipeline, param_grid=params, n_jobs=-1, cv=5, scoring='neg_mean_squared_error',
+                                           verbose=1)
+        _ = fit_dict[estimator].fit(x_train, y_train)
+        print(estimator + " COMPLETE ########################")
+        print("Best Score: " + str(round(fit_dict[estimator].best_score_, 4)))
