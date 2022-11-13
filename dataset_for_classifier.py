@@ -225,7 +225,7 @@ class DatasetPool():
                 # print(df_lfe_table[lb])
             c1 = set(df_lfe_table.columns)
             df_lfe_table=df_lfe_table.dropna(axis=1,how='all')
-            df_lfe_table = pd.DataFrame(SimpleImputer(missing_values=np.nan, strategy=kwargs["strategy"],fill_value = 0).fit_transform(
+            df_lfe_table = pd.DataFrame(SimpleImputer(missing_values=np.nan, strategy=kwargs["strategy"],fill_value = 0.0).fit_transform(
                 np.array(df_lfe_table)),columns=df_lfe_table.columns)
 
             # df_lfe_table = df_lfe_table.dropna()
