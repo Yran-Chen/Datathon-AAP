@@ -10,7 +10,7 @@ from sklearn import preprocessing
 import sklearn
 import copy
 from multiprocessing import Process, Pool
-
+from sklearn.impute import SimpleImputer
 model_param = {
     'model':'GradientBoostingClassifier',
 
@@ -90,6 +90,12 @@ class DatasetPool():
     def feature_eng(self,*args,**kwargs):
         # self.dataset_preprocessing(**kwargs)
         self.loading_training_(**kwargs)
+        for yi in self.training_dataset.keys():
+            x = self.training_dataset[yi][0].to_numpy()
+            x = self.feature_reduction(x)
+            self.training_dataset[yi][0] = x
+            # print(x)
+
 
     @log(_log = logHandler)
     def data_split(self,*args,**kwargs):
@@ -118,10 +124,20 @@ class DatasetPool():
         path_list = []
         if os.path.exists(os.path.join(self.save_dir, name)):
             for yi in y_:
-                for csv_x,csv_Y in [["X_train.csv","y_train.csv"]]:
+                    csv_x,csv_Y = "X_train.csv","y_train.csv"
+                    csv_xt, csv_Yt = "X_test.csv", "y_test.csv"
                     p1 = os.path.join(self.save_dir, name, yi, csv_x)
                     p2 = os.path.join(self.save_dir, name, yi, csv_Y)
-                    self.training_dataset[yi] = [pd.read_csv(p1),pd.read_csv(p2,header = None)]
+                    p3 = os.path.join(self.save_dir, name, yi, csv_xt)
+                    p4 = os.path.join(self.save_dir, name, yi, csv_Yt)
+                    self.training_dataset[yi] = [pd.read_csv(p1),pd.read_csv(p2,header = None),
+                                                 pd.read_csv(p3), pd.read_csv(p4, header=None),
+                                                 ]
+
+                    # csv_x, csv_Y = "X_test.csv", "y_test.csv"
+                    # p1 = os.path.join(self.save_dir, name, yi, csv_x)
+                    # p2 = os.path.join(self.save_dir, name, yi, csv_Y)
+                    # self.training_dataset[(yi, "test")] = [pd.read_csv(p1), pd.read_csv(p2, header=None)]
         else:
             self.preload_data(**kwargs)
         # print(self.training_dataset)
@@ -136,13 +152,29 @@ class DatasetPool():
                 operator_dataset = operator_dataset.sample(frac=kwargs["percent"])
 
             if "split" in kwargs.keys():
-                for x_1,x_2,y_ in kwargs["training_pairs"]:
+                for _,_,y_ in kwargs["training_pairs"]:
                     xidx = copy.deepcopy(self.feature_pool["x"])
-                    xidx.append(x_1)
-                    xidx.append(x_2)
+                    for ipyc in ["qty_sold_ppy_difm", "qty_sold_py_difm","qty_sold_ppy_diy", "qty_sold_py_diy"]:
+                        xidx.append(ipyc)
+                    print(xidx)
                     yidx = y_
 
                     xdf = operator_dataset[xidx]
+                    if "if_pca" in kwargs.keys() and kwargs["if_pca"]:
+                        ncp = kwargs['ncp']
+                        if ncp<len(xdf.columns):
+                            x = xdf.to_numpy()
+                            x -= np.mean(x, axis=0)
+                            x /= np.std(x, axis=0)
+                            x = self.feature_reduction(x,n_components=ncp)
+                            xdf = pd.DataFrame(x,columns = [i for i in range(ncp)])
+                        else:
+                            x = xdf.to_numpy()
+                            x -= np.mean(x, axis=0)
+                            x /= np.std(x, axis=0)
+                            # x = self.feature_reduction(x,n_components=ncp)
+                            xdf = pd.DataFrame(x,columns=xdf.columns )
+                        print(xdf)
                     ydf = operator_dataset[yidx]
                 # print(x,y)
                     X_train, X_test, y_train, y_test = \
@@ -183,7 +215,6 @@ class DatasetPool():
 
         return
         # return self.split_data_sklearn()
-
     def clean_data(self,*args,**kwargs):
         for name in self.dataset:
             df_lfe_table = self.dataset_input[name]
@@ -194,6 +225,11 @@ class DatasetPool():
                 # print(df_lfe_table[lb])
             c1 = set(df_lfe_table.columns)
             df_lfe_table=df_lfe_table.dropna(axis=1,how='all')
+            df_lfe_table = pd.DataFrame(SimpleImputer(missing_values=np.nan, strategy=kwargs["strategy"],fill_value = 0).fit_transform(
+                np.array(df_lfe_table)),columns=df_lfe_table.columns)
+
+            # df_lfe_table = df_lfe_table.dropna()
+            print(df_lfe_table.shape)
             c2 = set(df_lfe_table.columns)
             # print(c1-c2)
             self.dataset_input[name] = df_lfe_table
@@ -224,17 +260,17 @@ class DatasetPool():
         for name in self.dataset:
             self.dataset_input[name] = self.load_from_csv(self.dataset_dir[name])
 
-    def feature_reduction(self,df_data:pd.DataFrame,n_components=49)->pd.DataFrame:
+    def feature_reduction(self,df_data,n_components=40)->pd.DataFrame:
         from sklearn.decomposition import PCA
-
         if df_data.shape[1] <= n_components:
             return df_data
-
         else:
-            pca = PCA(n_components=n_components)
+            pca_ = PCA(n_components=n_components).fit(df_data)
+            new_df = pca_.transform(df_data)
+            var_exp = pca_.explained_variance_ratio_
 
-        print(pca.explained_variance_ratio_)
-        return df_data.fit_transform(df_data)
+        print(var_exp)
+        return new_df
 
     def update_dataset_config(self)-> None:
         for name in self.dataset:
